@@ -27,7 +27,6 @@ class LayerNorm(nn.Module):
         return F.layer_norm(input, self.weight.shape, self.weight, self.bias, 1e-5)
 
 class CausalSelfAttention(nn.Module):
-
     def __init__(self, config):
         super().__init__()
         assert config.n_embd % config.n_head == 0
@@ -41,6 +40,8 @@ class CausalSelfAttention(nn.Module):
         self.n_head = config.n_head
         self.n_embd = config.n_embd
         self.dropout = config.dropout
+        self.keys = None
+        self.values = None
         # flash attention make GPU go brrrrr but support is only in PyTorch >= 2.0
         self.flash = False # hasattr(torch.nn.functional, 'scaled_dot_product_attention')
         if not self.flash:
@@ -50,6 +51,8 @@ class CausalSelfAttention(nn.Module):
                                         .view(1, 1, config.block_size, config.block_size))
 
     def forward(self, x):
+        if self.keys!=None and self.values!=None:
+            x = x[:,-1:,:]
         B, T, C = x.size() # batch size, sequence length, embedding dimensionality (n_embd)
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
@@ -57,7 +60,17 @@ class CausalSelfAttention(nn.Module):
         k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
         q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
         v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-
+        if self.keys!=None:
+            # print(k.size(),self.keys.size(), v.size(), self.values.size())
+            self.keys = torch.cat([self.keys, k], dim = 2)
+        else:
+            self.keys = k
+        if self.values!=None:
+            self.values = torch.cat([self.values, v],dim = 2)
+        else:
+            self.values = v
+        k = self.keys
+        v = self.values
         # causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
         if self.flash:
             # efficient attention using Flash Attention CUDA kernels
@@ -326,5 +339,4 @@ class GPT(nn.Module):
             idx_next = torch.multinomial(probs, num_samples=1)
             # append sampled index to the running sequence and continue
             idx = torch.cat((idx, idx_next), dim=1)
-
         return idx

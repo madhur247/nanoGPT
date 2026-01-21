@@ -7,8 +7,7 @@ from contextlib import nullcontext
 import torch
 import tiktoken
 import time
-from model import GPTConfig, GPT
-
+from model_new import GPTConfig, GPT
 t1 = time.time()
 # -----------------------------------------------------------------------------
 init_from = 'resume' # either 'resume' (from an out_dir) or a gpt2 variant (e.g. 'gpt2-xl')
@@ -89,6 +88,5 @@ with torch.no_grad():
             y = model.generate(x, max_new_tokens, temperature=temperature, top_k=top_k)
             print(decode(y[0].tolist()))
             print('---------------')
-
 t2 = time.time()
-print("Time taken OG",t2-t1)
+print("Time",t2-t1)

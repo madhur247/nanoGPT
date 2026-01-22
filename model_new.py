@@ -113,8 +113,17 @@ class Block(nn.Module):
         self.mlp = MLP(config)
 
     def forward(self, x):
-        x = x + self.attn(self.ln_1(x))
-        x = x + self.mlp(self.ln_2(x))
+        x_attn = self.attn(self.ln_1(x))
+        if x_attn.size(1)==1:
+            x[:,-1:,:]+=x_attn
+        else:
+            x = x + x_attn
+        
+        x_mlp = self.mlp(self.ln_2(x))
+        if x_mlp.size(1)==1:
+            x[:,-1:,:]+=x_mlp
+        else:
+            x = x + x_mlp
         return x
 
 @dataclass

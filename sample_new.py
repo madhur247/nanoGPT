@@ -8,7 +8,6 @@ import torch
 import tiktoken
 import time
 from model_new import GPTConfig, GPT
-t1 = time.time()
 # -----------------------------------------------------------------------------
 init_from = 'resume' # either 'resume' (from an out_dir) or a gpt2 variant (e.g. 'gpt2-xl')
 out_dir = 'out' # ignored if init_from is not 'resume'
@@ -80,7 +79,7 @@ if start.startswith('FILE:'):
         start = f.read()
 start_ids = encode(start)
 x = (torch.tensor(start_ids, dtype=torch.long, device=device)[None, ...])
-
+t1 = time.time()
 # run generation
 with torch.no_grad():
     with ctx:

@@ -84,6 +84,10 @@ class CausalSelfAttention(nn.Module):
         # output projection
         y = self.resid_dropout(self.c_proj(y))
         return y
+    
+    def cache_clean(self):
+        self.keys = None
+        self.values = None
 
 class MLP(nn.Module):
 
@@ -338,4 +342,6 @@ class GPT(nn.Module):
             # append sampled index to the running sequence and continue
             idx = idx_next
             ret_idx = torch.cat((ret_idx, idx), dim=1)
+        for block in self.transformer.h:
+            block.attn.cache_clean()
         return ret_idx
